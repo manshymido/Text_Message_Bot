@@ -8,7 +8,12 @@ A proof-of-concept Telegram bot that extracts school-related information from gr
 - 📅 **Calendar Integration**: Automatically creates Google Calendar events for exams, classes, and assignments
 - ✅ **Task Management**: Creates Google Tasks for assignments with due dates
 - 🔍 **Smart Filtering**: Only processes messages that contain school-related keywords
-- 🛡️ **Error Handling**: Robust error handling with retry logic and logging
+- 🛡️ **Error Handling**: Robust error handling with retry logic, circuit breakers, and dead letter queue
+- 🔒 **Security**: Rate limiting, input validation, and sanitization
+- 📊 **Monitoring**: Health checks, metrics collection, and comprehensive logging
+- 💾 **Database**: SQLite database for tracking processed messages and preventing duplicates
+- 🐳 **Docker Support**: Full Docker and Docker Compose support for easy deployment
+- ⚡ **Performance**: Caching, async operations, and optimized API calls
 
 ## Prerequisites
 
@@ -137,6 +142,9 @@ The bot automatically processes messages in group chats that contain school-rela
 
 - `/start` - Display welcome message and bot information
 - `/status` - Check bot status and service availability
+- `/stats` - View bot statistics (messages processed, events created, etc.)
+- `/health` - Check health status of all services
+- `/metrics` - View performance metrics and timing statistics
 
 ### Example Messages
 
@@ -166,12 +174,29 @@ Text_Message_Bot/
 │   └── task_service.py     # Google Tasks integration
 ├── utils/
 │   ├── config.py           # Configuration management
-│   ├── logger.py           # Logging setup
-│   └── auth.py             # Google OAuth2 helper
+│   ├── logger.py           # Logging setup with rotation
+│   ├── auth.py             # Google OAuth2 helper
+│   ├── cache.py            # Caching utilities
+│   ├── circuit_breaker.py  # Circuit breaker pattern
+│   └── dead_letter_queue.py # Dead letter queue for failed messages
+├── database/               # Database module
+│   ├── db_manager.py       # SQLite database manager
+│   └── models.py            # Database models
+├── security/               # Security module
+│   ├── rate_limiter.py     # Rate limiting
+│   └── validator.py        # Input validation
+├── monitoring/             # Monitoring module
+│   ├── metrics.py          # Metrics collection
+│   └── health_check.py     # Health checks
+├── tests/                  # Test suite
 ├── credentials/            # Google OAuth credentials (gitignored)
+├── data/                   # Database and persistent data (gitignored)
 ├── logs/                   # Log files (gitignored)
 ├── requirements.txt        # Python dependencies
+├── requirements-dev.txt    # Development dependencies
 ├── .env.example           # Environment variables template
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Docker Compose configuration
 └── README.md              # This file
 ```
 
@@ -250,14 +275,23 @@ This is a proof-of-concept implementation. Known limitations:
 - No support for recurring events beyond single occurrences
 - Limited timezone handling
 
+## New Features (Recently Added)
+
+- ✅ **Database Tracking**: SQLite database to track processed messages and prevent duplicates
+- ✅ **Security**: Rate limiting and input validation to prevent abuse
+- ✅ **Error Resilience**: Circuit breaker pattern and dead letter queue for failed operations
+- ✅ **Monitoring**: Comprehensive health checks and metrics collection
+- ✅ **Docker Support**: Full containerization with Docker and Docker Compose
+- ✅ **Performance**: Caching and async operations for better performance
+- ✅ **Logging**: Structured logging with rotation and error tracking
+
 ## Future Enhancements
 
 - Support for multiple calendars/task lists
 - Better duplicate detection using fuzzy matching
 - Support for recurring events
 - Multi-language support
-- Webhook support for production deployment
-- Database for tracking processed messages
+- Webhook support for production deployment (already implemented, needs configuration)
 
 ## License
 

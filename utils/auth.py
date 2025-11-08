@@ -27,7 +27,15 @@ def get_google_credentials() -> Optional[Credentials]:
         Credentials object or None if authentication fails
     """
     creds = None
+    # Use data directory for token if credentials is read-only (Docker)
     token_path = Path(settings.google_token_file)
+    if not token_path.parent.exists() or not os.access(token_path.parent, os.W_OK):
+        # Fallback to data directory
+        data_dir = Path("data/credentials")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        token_path = data_dir / "token.json"
+        logger.info(f"Using data directory for token: {token_path}")
+    
     creds_path = Path(settings.google_credentials_file)
 
     # Check if credentials file exists

@@ -1,5 +1,7 @@
 """Google Calendar API integration."""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -13,6 +15,7 @@ from tenacity import (
 
 from extractor.models import EventType, SchoolEvent
 from utils.auth import get_calendar_service
+from utils.cache import SimpleCache
 from utils.config import settings
 from utils.logger import logger
 
@@ -32,8 +35,23 @@ class CalendarService:
     def __init__(self):
         """Initialize calendar service."""
         self.service = get_calendar_service()
+        self.cache = SimpleCache(default_ttl=300)  # 5 minutes cache
+        self.executor = ThreadPoolExecutor(max_workers=2)
         if not self.service:
             logger.warning("Calendar service not available")
+
+    async def create_event_async(self, event: SchoolEvent) -> Optional[str]:
+        """
+        Create event asynchronously.
+
+        Args:
+            event: SchoolEvent to create calendar event for
+
+        Returns:
+            Event ID if successful, None otherwise
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self.executor, self.create_event, event)
 
     def create_event(self, event: SchoolEvent) -> Optional[str]:
         """
@@ -127,6 +145,12 @@ class CalendarService:
 
     def _is_duplicate(self, event: SchoolEvent, event_date: datetime) -> bool:
         """Check if event already exists (simple duplicate detection)."""
+        # Check cache first
+        cache_key = f"duplicate_check_{event_date.date()}_{event.title[:50]}"
+        cached_result = self.cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
         try:
             # Search for events on the same day with similar title
             time_min = event_date.replace(hour=0, minute=0, second=0).isoformat() + "Z"
@@ -148,13 +172,17 @@ class CalendarService:
             events = events_result.get("items", [])
             event_title_lower = event.title.lower()
 
+            is_duplicate = False
             for existing_event in events:
                 existing_title = existing_event.get("summary", "").lower()
                 # Simple similarity check
                 if event_title_lower in existing_title or existing_title in event_title_lower:
-                    return True
+                    is_duplicate = True
+                    break
 
-            return False
+            # Cache result for 1 hour
+            self.cache.set(cache_key, is_duplicate, ttl=3600)
+            return is_duplicate
 
         except Exception as e:
             logger.warning(f"Duplicate check failed: {e}")

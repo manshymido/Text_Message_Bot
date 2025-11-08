@@ -1,6 +1,7 @@
-"""Main entry point for Telegram bot."""
+"""Main entry point for Telegram bot with webhook support."""
 
 import sys
+from pathlib import Path
 
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
@@ -16,12 +17,22 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 def main() -> None:
-    """Start the Telegram bot."""
+    """Start the Telegram bot with webhook."""
     try:
         # Validate configuration
-        logger.info("Starting Text Message Bot...")
+        logger.info("Starting Text Message Bot (Webhook mode)...")
         logger.info(f"Log level: {settings.log_level}")
         logger.info(f"LLM extraction: {settings.enable_llm_extraction}")
+
+        # Get webhook URL from environment
+        import os
+        webhook_url = os.getenv("WEBHOOK_URL")
+        webhook_port = int(os.getenv("WEBHOOK_PORT", "8000"))
+        webhook_path = os.getenv("WEBHOOK_PATH", "/webhook")
+
+        if not webhook_url:
+            logger.error("WEBHOOK_URL environment variable is required for webhook mode")
+            sys.exit(1)
 
         # Create application
         application = (
@@ -70,9 +81,23 @@ def main() -> None:
         # Add error handler
         application.add_error_handler(error_handler)
 
-        # Start bot
-        logger.info("Bot is running. Press Ctrl+C to stop.")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Set webhook
+        full_webhook_url = f"{webhook_url}{webhook_path}"
+        logger.info(f"Setting webhook to: {full_webhook_url}")
+        
+        application.bot.set_webhook(
+            url=full_webhook_url,
+            allowed_updates=Update.ALL_TYPES,
+        )
+
+        # Start webhook server
+        logger.info(f"Starting webhook server on port {webhook_port}")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=webhook_port,
+            webhook_url=full_webhook_url,
+            allowed_updates=Update.ALL_TYPES,
+        )
 
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")

@@ -45,7 +45,34 @@ env/
 *.log
 logs/
 
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+check-status.ps1
+STATUS.md
+FINAL_STATUS.md
+PROJECT_STATUS.md
+
+# Coverage
+.coverage
+htmlcov/
+*.cover
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
 

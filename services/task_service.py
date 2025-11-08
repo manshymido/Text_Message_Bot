@@ -1,5 +1,7 @@
 """Google Tasks API integration."""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import List, Optional
 
@@ -13,6 +15,7 @@ from tenacity import (
 
 from extractor.models import SchoolEvent
 from utils.auth import get_tasks_service
+from utils.cache import SimpleCache
 from utils.logger import logger
 
 
@@ -23,6 +26,8 @@ class TaskService:
         """Initialize task service."""
         self.service = get_tasks_service()
         self.task_list_id = None
+        self.cache = SimpleCache(default_ttl=300)  # 5 minutes cache
+        self.executor = ThreadPoolExecutor(max_workers=2)
         if not self.service:
             logger.warning("Tasks service not available")
         else:
@@ -54,6 +59,19 @@ class TaskService:
         except Exception as e:
             logger.error(f"Failed to get task list: {e}")
             self.task_list_id = "@default"
+
+    async def create_task_async(self, event: SchoolEvent) -> Optional[str]:
+        """
+        Create task asynchronously.
+
+        Args:
+            event: SchoolEvent to create task for
+
+        Returns:
+            Task ID if successful, None otherwise
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self.executor, self.create_task, event)
 
     def create_task(self, event: SchoolEvent) -> Optional[str]:
         """

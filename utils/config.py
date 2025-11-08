@@ -5,8 +5,15 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file if it exists
+# In Docker, environment variables are passed directly via docker-compose,
+# but we still try to load .env for local development
+env_file = Path(".env")
+if env_file.exists():
+    load_dotenv(env_file)
+else:
+    # Try to load from current directory (won't fail if file doesn't exist)
+    load_dotenv()
 
 # Try to import pydantic_settings for Pydantic v2, fallback to pydantic for v1
 try:
