@@ -4,7 +4,7 @@ A proof-of-concept Telegram bot that extracts school-related information from gr
 
 ## Features
 
-- 🤖 **Intelligent Extraction**: Hybrid approach using pattern matching and LLM (OpenAI) for extracting school information
+- 🤖 **Intelligent Extraction**: Hybrid approach using pattern matching and LLM (Google Gemini) for extracting school information
 - 📅 **Calendar Integration**: Automatically creates Google Calendar events for exams, classes, and assignments
 - ✅ **Task Management**: Creates Google Tasks for assignments with due dates
 - 🔍 **Smart Filtering**: Only processes messages that contain school-related keywords
@@ -15,7 +15,7 @@ A proof-of-concept Telegram bot that extracts school-related information from gr
 - Python 3.8 or higher
 - Telegram account
 - Google account with Calendar and Tasks access
-- OpenAI API key (optional, for LLM extraction)
+- Google Gemini API key (optional, for LLM extraction)
 
 ## Setup Instructions
 
@@ -69,7 +69,15 @@ pip install -r requirements.txt
 5. Download the credentials JSON file
 6. Save it as `credentials/credentials.json` in the project directory
 
-### 4. Configure Environment Variables
+### 4. Get Google Gemini API Key (Optional)
+
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy the API key - you'll add it to `.env` file
+5. (Optional) You can restrict the API key to specific APIs for security
+
+### 5. Configure Environment Variables
 
 1. Copy the example environment file:
    ```bash
@@ -81,8 +89,8 @@ pip install -r requirements.txt
    # Telegram Bot Configuration
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-   # OpenAI API Configuration (optional)
-   OPENAI_API_KEY=your_openai_api_key_here
+   # Google Gemini API Configuration (optional)
+   GEMINI_API_KEY=your_gemini_api_key_here
 
    # Google API Configuration
    GOOGLE_CREDENTIALS_FILE=credentials/credentials.json
@@ -96,7 +104,7 @@ pip install -r requirements.txt
    ENABLE_LLM_EXTRACTION=true
    ```
 
-### 5. Authenticate with Google
+### 6. Authenticate with Google
 
 1. Run the bot for the first time:
    ```bash
@@ -108,7 +116,7 @@ pip install -r requirements.txt
 4. Grant permissions for Calendar and Tasks
 5. The token will be saved to `credentials/token.json` automatically
 
-### 6. Add Bot to Group Chat
+### 7. Add Bot to Group Chat
 
 1. Create or open a Telegram group chat
 2. Add your bot to the group (search for your bot's username)
@@ -172,7 +180,7 @@ Text_Message_Bot/
 ### Environment Variables
 
 - `TELEGRAM_BOT_TOKEN` - Your Telegram bot token (required)
-- `OPENAI_API_KEY` - OpenAI API key for LLM extraction (optional)
+- `GEMINI_API_KEY` - Google Gemini API key for LLM extraction (optional)
 - `GOOGLE_CREDENTIALS_FILE` - Path to Google OAuth credentials (default: `credentials/credentials.json`)
 - `GOOGLE_TOKEN_FILE` - Path to save Google OAuth token (default: `credentials/token.json`)
 - `LOG_LEVEL` - Logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
@@ -207,9 +215,10 @@ Text_Message_Bot/
 
 ### LLM extraction not working
 
-- Check OpenAI API key is set in `.env`
+- Check Gemini API key is set in `.env`
 - Verify API key is valid and has credits
 - Check `ENABLE_LLM_EXTRACTION` is set to `true`
+- Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 ### Low extraction accuracy
 

@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     # Telegram Bot Configuration
     telegram_bot_token: str = Field(..., env="TELEGRAM_BOT_TOKEN")
 
-    # OpenAI API Configuration
-    openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
+    # Google Gemini API Configuration
+    gemini_api_key: Optional[str] = Field(None, env="GEMINI_API_KEY")
 
     # Google API Configuration
     google_credentials_file: str = Field(

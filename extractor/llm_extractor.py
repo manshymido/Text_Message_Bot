@@ -1,9 +1,9 @@
-"""LLM-based extraction for complex natural language."""
+"""LLM-based extraction for complex natural language using Google Gemini."""
 
 import json
 from typing import Optional
 
-from openai import OpenAI
+import google.generativeai as genai
 
 from extractor.models import EventType, SchoolEvent
 from utils.config import settings
@@ -20,7 +20,7 @@ Extract the following information if present:
 - Description: Any additional details
 - Location: Where does it occur? (if mentioned)
 
-Return a JSON object with this structure:
+Return ONLY a valid JSON object with this structure (no markdown, no code blocks):
 {
   "title": "string",
   "event_type": "assignment|exam|class|meeting|other",
@@ -31,28 +31,29 @@ Return a JSON object with this structure:
   "confidence": 0.0-1.0
 }
 
-If information is not clear or not present, use null. Only extract if the text is clearly school-related."""
+If information is not clear or not present, use null. Only extract if the text is clearly school-related. Return only the JSON object, nothing else."""
 
 
 class LLMExtractor:
-    """Extract school-related information using LLM."""
+    """Extract school-related information using Google Gemini."""
 
     def __init__(self):
-        """Initialize LLM extractor."""
-        if not settings.openai_api_key:
-            logger.warning("OpenAI API key not set. LLM extraction disabled.")
-            self.client = None
+        """Initialize LLM extractor with Gemini."""
+        if not settings.gemini_api_key:
+            logger.warning("Gemini API key not set. LLM extraction disabled.")
+            self.model = None
         else:
             try:
-                self.client = OpenAI(api_key=settings.openai_api_key)
-                logger.info("LLM extractor initialized")
+                genai.configure(api_key=settings.gemini_api_key)
+                self.model = genai.GenerativeModel("gemini-2.5-flash")
+                logger.info("Gemini LLM extractor initialized")
             except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
-                self.client = None
+                logger.error(f"Failed to initialize Gemini client: {e}")
+                self.model = None
 
     def extract(self, text: str) -> Optional[SchoolEvent]:
         """
-        Extract school event information using LLM.
+        Extract school event information using Gemini.
 
         Args:
             text: Input text to extract from
@@ -60,29 +61,38 @@ class LLMExtractor:
         Returns:
             SchoolEvent if extraction successful, None otherwise
         """
-        if not self.client or not settings.enable_llm_extraction:
+        if not self.model or not settings.enable_llm_extraction:
             return None
 
         if not text or len(text.strip()) < 10:
             return None
 
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Using latest efficient model
-                messages=[
-                    {"role": "system", "content": EXTRACTION_PROMPT},
-                    {
-                        "role": "user",
-                        "content": f"Extract school-related information from this message:\n\n{text}",
-                    },
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.3,
+            # Prepare the prompt
+            full_prompt = f"{EXTRACTION_PROMPT}\n\nMessage to extract from:\n{text}"
+
+            # Generate response using Gemini
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.3,
+                    top_p=0.95,
+                    top_k=40,
+                ),
             )
 
-            content = response.choices[0].message.content
+            content = response.text.strip()
             if not content:
                 return None
+
+            # Clean up response (remove markdown code blocks if present)
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.startswith("```"):
+                content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+            content = content.strip()
 
             data = json.loads(content)
 

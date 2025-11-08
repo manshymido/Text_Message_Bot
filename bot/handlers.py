@@ -14,7 +14,7 @@ from services.task_service import TaskService
 from utils.logger import logger
 
 
-class MessageHandler:
+class BotMessageHandler:
     """Handle Telegram messages and extract school information."""
 
     def __init__(self):
@@ -35,31 +35,40 @@ class MessageHandler:
             update: Telegram update object
             context: Bot context
         """
-        if not update.message or not update.message.text:
+        if not update.message:
+            logger.debug("Update has no message")
+            return
+            
+        if not update.message.text:
+            logger.debug("Message has no text content")
             return
 
         message_text = update.message.text
         chat_id = update.message.chat_id
+        chat_type = update.message.chat.type if update.message.chat else "unknown"
         user_id = update.message.from_user.id if update.message.from_user else None
 
         logger.info(
-            f"Received message from chat {chat_id}, user {user_id}: {message_text[:100]}"
+            f"Received message from chat {chat_id} (type: {chat_type}), user {user_id}: {message_text[:100]}"
         )
 
         # Filter for school-related content
         if not self.message_filter.should_process(message_text):
-            logger.debug("Message filtered out (not school-related)")
+            logger.info(f"Message filtered out (not school-related): {message_text[:50]}...")
             return
+        
+        logger.info(f"Message passed filter, processing: {message_text[:50]}...")
 
         # Extract information
         event = await self._extract_event(message_text)
 
         if not event:
-            logger.debug("Failed to extract event information")
+            logger.info("Failed to extract event information from message")
             return
 
+        event_type_str = event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type)
         logger.info(
-            f"Extracted event: {event.title} ({event.event_type.value}) "
+            f"Extracted event: {event.title} ({event_type_str}) "
             f"with confidence {event.confidence:.2f}"
         )
 
@@ -75,7 +84,8 @@ class MessageHandler:
 
         # Create task (for assignments)
         task_id = None
-        if event.event_type.value == "assignment":
+        event_type_str = event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type)
+        if event_type_str == "assignment":
             try:
                 task_id = self.task_service.create_task(event)
                 if task_id:
@@ -83,9 +93,8 @@ class MessageHandler:
             except Exception as e:
                 logger.error(f"Failed to create task: {e}")
 
-        # Send confirmation if in group chat
-        if update.message.chat.type in ["group", "supergroup"]:
-            await self._send_confirmation(update, event, calendar_event_id, task_id)
+        # Send confirmation message
+        await self._send_confirmation(update, event, calendar_event_id, task_id)
 
     async def _extract_event(self, text: str) -> Optional[SchoolEvent]:
         """
@@ -120,9 +129,10 @@ class MessageHandler:
     ) -> None:
         """Send confirmation message to chat."""
         try:
+            event_type_str = event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type)
             confirmation_parts = [
                 f"✓ Extracted: {event.title}",
-                f"Type: {event.event_type.value.title()}",
+                f"Type: {event_type_str.title()}",
             ]
 
             if event.date:
@@ -172,7 +182,7 @@ class MessageHandler:
         # Check services
         calendar_ok = self.calendar_service.service is not None
         task_ok = self.task_service.service is not None
-        llm_ok = self.llm_extractor.client is not None
+        llm_ok = self.llm_extractor.model is not None
 
         status_parts.append(f"📅 Calendar: {'✓' if calendar_ok else '✗'}")
         status_parts.append(f"✅ Tasks: {'✓' if task_ok else '✗'}")

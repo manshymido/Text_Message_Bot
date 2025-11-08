@@ -1,0 +1,5 @@
+# Override default ignore patterns to allow .env files
+!.env
+!.env.*
+!credentials/
+!credentials.json

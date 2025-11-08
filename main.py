@@ -5,7 +5,7 @@ import sys
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
 
-from bot.handlers import MessageHandler
+from bot.handlers import BotMessageHandler
 from utils.config import settings
 from utils.logger import logger
 
@@ -31,13 +31,21 @@ def main() -> None:
         )
 
         # Initialize handlers
-        message_handler = MessageHandler()
+        message_handler = BotMessageHandler()
 
         # Register handlers
         # Handle messages in groups (both group and supergroup)
         application.add_handler(
             MessageHandler(
                 filters.TEXT & (filters.ChatType.GROUP | filters.ChatType.SUPERGROUP),
+                message_handler.handle_message,
+            )
+        )
+        
+        # Also handle private messages for testing
+        application.add_handler(
+            MessageHandler(
+                filters.TEXT & filters.ChatType.PRIVATE,
                 message_handler.handle_message,
             )
         )

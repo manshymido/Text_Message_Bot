@@ -70,7 +70,8 @@ class TaskService:
             return None
 
         # Only create tasks for assignments
-        if event.event_type.value != "assignment":
+        event_type_str = event.event_type.value if hasattr(event.event_type, 'value') else str(event.event_type)
+        if event_type_str != "assignment":
             return None
 
         # Use due_date if available, otherwise use date
